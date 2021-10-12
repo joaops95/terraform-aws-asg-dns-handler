@@ -15,6 +15,7 @@ resource "aws_lambda_function" "autoscale_handling" {
   handler          = "autoscale.lambda_handler"
   runtime          = "python3.8"
   source_code_hash = filebase64sha256(local.lambda_pkg.output_path)
+  reserved_concurrent_executions = 1
   description      = "Handles DNS for autoscaling groups by receiving autoscaling notifications and setting/deleting records from route53"
   environment {
     variables = {
