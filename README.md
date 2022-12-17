@@ -28,6 +28,12 @@ asg-test-#instanceid.example@Z3QP9GZSRL8IVA
    | Static prefix common across all instances (var.hostname_prefix)
 ```
 
+You can also use the following additional tags:
+
+#instanceid - Replaced by the instance ID of the instance.
+#instance-count - Replaced by the total number of instances in the ASG.
+#instance-index - Replaced by the index of the instance in the ASG, starting at 0.
+
 Could be interpolated in Terraform like this:
 
 ```hcl

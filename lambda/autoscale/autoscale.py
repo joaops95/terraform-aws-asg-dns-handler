@@ -62,8 +62,34 @@ def fetch_tag_metadata(asg_name):
     return tag_value.split("@")
 
 # Builds a hostname according to pattern
-def build_hostname(hostname_pattern, instance_id):
-    return hostname_pattern.replace('#instanceid', instance_id)
+def build_hostname(hostname_pattern, instance_id, asg_name):
+
+    possible_tags = ['instanceid', 'instance-count', 'instance-index']
+
+    if not any(tag in hostname_pattern for tag in possible_tags):
+        logger.error("Hostname pattern must contain one of the following tags: %s", possible_tags)
+        sys.exit(1)
+
+    #get instance count
+    if 'instance-count' in hostname_pattern:
+        instance_count = autoscaling.describe_auto_scaling_groups(
+            AutoScalingGroupNames=[asg_name]
+        )['AutoScalingGroups'][0]['DesiredCapacity']
+
+        hostname_pattern = hostname_pattern.replace('#instance-count', str(instance_count))
+
+    elif 'instance-index' in hostname_pattern:
+        instance_index = autoscaling.describe_auto_scaling_groups(
+            AutoScalingGroupNames=[asg_name]
+        )['AutoScalingGroups'][0]['Instances'].index(instance_id)
+
+        hostname_pattern = hostname_pattern.replace('#instance-index', str(instance_index))
+    
+    else:
+        hostname_pattern = hostname_pattern.replace('#instanceid', instance_id)
+
+    
+    return hostname_pattern
 
 # Updates the name tag of an instance
 def update_name_tag(instance_id, hostname):
@@ -120,7 +146,7 @@ def process_message(message):
     instance_id =  message['EC2InstanceId']
 
     hostname_pattern, zone_id = fetch_tag_metadata(asg_name)
-    hostname = build_hostname(hostname_pattern, instance_id)
+    hostname = build_hostname(hostname_pattern, instance_id, asg_name)
 
     if operation == "UPSERT":
         ip = fetch_ip_from_ec2(instance_id)
